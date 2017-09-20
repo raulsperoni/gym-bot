@@ -1,0 +1,35 @@
+version: 0.0
+os: linux
+
+files:
+ - source: ./docker-compose.produccion.yml
+   destination: /home/ubuntu/tt-bot-deploy
+ - source: ./buildspec.yml
+   destination: /home/ubuntu/tt-bot-deploy
+ - source: ./appspec.yml
+   destination: /home/ubuntu/tt-bot-deploy
+ - source: ./start_server.sh
+   destination: /home/ubuntu/tt-bot-deploy
+ - source: ./stop_server.sh
+   destination: /home/ubuntu/tt-bot-deploy
+ - source: ./check_service.sh
+   destination: /home/ubuntu/tt-bot-deploy
+
+permissions:
+ - object: /
+   pattern: "**"
+   owner: ubuntu
+   group: ubuntu
+
+hooks:
+  AfterInstall:
+    - location: stop_server.sh
+      timeout: 300
+      runas: root
+    - location: start_server.sh
+      timeout: 800
+      runas: root
+  ValidateService:
+    - location: check_service.sh
+      timeout: 60
+      runas: root

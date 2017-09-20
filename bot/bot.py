@@ -3,47 +3,49 @@
 
 
 import logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler, CallbackQueryHandler,ConversationHandler,RegexHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler, CallbackQueryHandler, \
+    ConversationHandler, RegexHandler
 from telegram import InlineQueryResultArticle, InputTextMessageContent
-from libs.bot_utils import start,contact,error,elegir_rutina,elegir_dia,elegir_ejercicio,registrar,opciones,acerca_de,terminar,ver, hacer_ejercicio, actualizar_peso, guardar_nuevo_peso, comenzar_ejercicio
-from libs.bot_utils import IDENTIFICACION, OPCIONES, ELEGIR_ACTIVIDAD, HACER_ACTIVIDAD, RECIBIR, VER
+from bot_utils import start, identificar, error, proyecto_elegido, issue_elegido, recibir_horas, terminar, \
+    confirmar_host_ok, confirmar_host_ko, confirmar_username_ok, confirmar_username_ko, host_elegido, pedir_horas, \
+    salir, issue_actualizar_estado, nuevo_host
+from bot_utils import IDENTIFICAR, ISSUE, RECIBIR, CONFIRMAR, HOST, \
+    PROYECTO
 
 keys = {}
-exec(open('libs/key_all.py').read(), keys)
+exec (open('key_all.py').read(), keys)
 updater = Updater(token=keys['telegram'])
-
 
 dispatcher = updater.dispatcher
 conv_handler = ConversationHandler(
-	entry_points=[CommandHandler('start', start)],
+    entry_points=[CommandHandler('start', start)],
     states={
-        IDENTIFICACION: [MessageHandler(Filters.contact, contact)],
-        OPCIONES: [
-			CallbackQueryHandler(opciones,pattern='.*seguir.*',pass_user_data=True),
-			CallbackQueryHandler(acerca_de,pattern='.*acerca_de.*',pass_user_data=True)],
-	    ELEGIR_ACTIVIDAD: [
-				CallbackQueryHandler(elegir_ejercicio,pattern='.*dia.*',pass_user_data=True),
-				CallbackQueryHandler(elegir_dia,pattern='.*rutina.*',pass_user_data=True),
-				CallbackQueryHandler(elegir_rutina,pattern='.*entrenar.*',pass_user_data=True),
-				CallbackQueryHandler(ver,pattern='.*ver.*',pass_user_data=True)
-				],
-        HACER_ACTIVIDAD: [
-				CallbackQueryHandler(comenzar_ejercicio,pattern='.*comenzar.*',pass_user_data=True),
-				CallbackQueryHandler(hacer_ejercicio,pass_user_data=True)
-				,
-				],
-		VER: [],
-        RECIBIR: [CallbackQueryHandler(actualizar_peso, pass_user_data=True),MessageHandler(Filters.text, guardar_nuevo_peso, pass_user_data=True)],
-        },
-    fallbacks=[CallbackQueryHandler(terminar,pattern='.*terminar.*')]
-    )
+        IDENTIFICAR: [MessageHandler(Filters.text, identificar, pass_user_data=True)],
+        CONFIRMAR: [
+            CallbackQueryHandler(confirmar_host_ok, pattern='.*host_ok.*', pass_user_data=True),
+            CallbackQueryHandler(confirmar_host_ko, pattern='.*host_ko.*', pass_user_data=True),
+            CallbackQueryHandler(confirmar_username_ok, pattern='.*username_ok.*', pass_user_data=True),
+            CallbackQueryHandler(confirmar_username_ko, pattern='.*username_ko.*', pass_user_data=True),
+            CallbackQueryHandler(issue_actualizar_estado, pattern='.*issue_estado.*', pass_user_data=True)
+        ],
+        HOST: [CallbackQueryHandler(nuevo_host, pattern='.*nuevo_host.*', pass_user_data=True),
+               CallbackQueryHandler(host_elegido, pass_user_data=True)],
+        PROYECTO: [CallbackQueryHandler(proyecto_elegido, pass_user_data=True)],
+        ISSUE: [CallbackQueryHandler(proyecto_elegido, pattern='.*esolved.*', pass_user_data=True),
+                CallbackQueryHandler(issue_elegido, pass_user_data=True)],
+        RECIBIR: [CallbackQueryHandler(pedir_horas, pass_user_data=True),
+                  MessageHandler(Filters.text, recibir_horas, pass_user_data=True)]
+    },
+    fallbacks=[CommandHandler('salir', salir, pass_user_data=True), CallbackQueryHandler(terminar, pattern='terminar', pass_user_data=True)]
+)
 dispatcher.add_handler(conv_handler)
-
-
-
 
 # log all errors
 dispatcher.add_error_handler(error)
 
-updater.start_polling()
+# Con SSL
+updater.start_webhook(listen="0.0.0.0",port=8443,url_path=keys['telegram'])
+updater.bot.setWebhook("https://tt.mgcoders.com/" + keys['telegram'])
+# POLLING
+#updater.start_polling()
 updater.idle()
